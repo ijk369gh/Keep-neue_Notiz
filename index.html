@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Koi DB">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230056b3' width='100' height='100'/><text y='70' x='50' text-anchor='middle' font-size='60' fill='white'>🐟</text></svg>">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='70' x='10' font-size='80'>🐟</text></svg>">
+<title>Koi Datenblatt</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; color: #333; }
+  h2 { text-align: center; }
+  label { display: inline-block; width: 130px; margin-top: 10px; font-weight: bold; }
+  select, input[type="text"], input[type="number"] {
+    padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;
+  }
+  select, input[list] { width: 220px; }
+  #fotosNum { width: 70px; }
+  #inputDate { width: 120px; }
+  #qty { width: 70px; }
+  #size { width: 70px; }
+  #bprice, #kprice { width: 140px; }
+  .foto-input { display: flex; align-items: center; }
+  .foto-prefix { font-weight: bold; font-size: 18px; margin-right: 5px; color: #0056b3; }
+  .price-checkbox { margin-left: 10px; }
+  .price-checkbox label { width: auto; }
+  .checkboxes label { width: auto; margin-right: 10px; }
+  #output { margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 6px; font-weight: bold; color: #0056b3; word-break: break-word; }
+  button { margin-top: 20px; padding: 12px 20px; background: #0056b3; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; }
+  button:hover { background: #003f8a; }
+  .btn-secondary { background: #6c757d; margin-top: 10px; }
+  .btn-secondary:hover { background: #5a6268; }
+  .btn-copy { background: #28a745; margin-top: 10px; }
+  .btn-copy:hover { background: #218838; }
+  .success-msg { color: #28a745; margin-top: 10px; padding: 10px; background: #d4edda; border-radius: 4px; display: none; text-align: center; }
+  .instructions { background: #fff3cd; padding: 15px; border-radius: 6px; margin-top: 20px; border-left: 4px solid #ffc107; }
+  .instructions h3 { margin-top: 0; color: #856404; }
+  .price-hint { font-size: 11px; color: #666; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<h2>🐟 Koi Datenblatt</h2>
+
+<form id="koiForm">
+
+  <label>Fotos:</label>
+  <div class="foto-input">
+    <span class="foto-prefix">26-</span>
+    <input type="text" id="fotosNum" placeholder="000" pattern="\d{3}" inputmode="numeric" maxlength="3" required oninput="updateTitle()" onblur="formatFotoNumber()">
+  </div>
+
+  <label>Input Date:</label>
+  <input type="text" id="inputDate" placeholder="YYMMDD" pattern="\d{6}" inputmode="numeric" maxlength="6"><br>
+
+  <label>How to Get:</label>
+  <select id="howToGet" onchange="handleHowToGetChange()">
+    <option value="">---neu---</option>
+    <option value="Tour KZ" selected>Tour KZ</option>
+    <option value="CC Tour">CC Tour</option>
+    <option value="Online Auktion">Online Auktion</option>
+    <option value="Narita web-auction">Narita web-auction</option>
+    <option value="Live Auktion">Live Auktion</option>
+  </select>
+  <input type="text" id="howToGetOther" placeholder="Neu eingeben" style="display:none; margin-top: 5px; width: 220px;" maxlength="50" oninput="updateTitle()"><br>
+
+  <label>Breeder:</label>
+  <select id="breederSelect" onchange="handleBreederChange()">
+    <option value="">---neu---</option>
+    <option value="Aoki">Aoki</option><option value="Beppu">Beppu</option><option value="Dainichi">Dainichi</option><option value="Dainichi (T)">Dainichi (T)</option>
+    <option value="Genjiro">Genjiro</option><option value="Higashi">Higashi</option><option value="Hiroi">Hiroi</option><option value="Hoshikin">Hoshikin</option>
+    <option value="Hosokai">Hosokai</option><option value="Igarashi">Igarashi</option><option value="Ikarashi">Ikarashi</option><option value="Isa">Isa</option>
+    <option value="Ishihara">Ishihara</option><option value="Izumiya">Izumiya</option><option value="Kanno">Kanno</option><option value="Kawakami">Kawakami</option>
+    <option value="Kibi">Kibi</option><option value="KK Sakai">KK Sakai</option><option value="Kondo">Kondo</option><option value="Konishi">Konishi</option>
+    <option value="Maruhide">Maruhide</option><option value="Maruju">Maruju</option><option value="Marusaka">Marusaka</option><option value="Marusei">Marusei</option>
+  </select>
+  <input type="text" id="breederOther" placeholder="Neu eingeben" style="display:none; margin-top: 5px; width: 220px;" maxlength="50" oninput="updateTitle()"><br>
+
+  <label>Agent:</label>
+  <div class="checkboxes" style="display:inline-block; white-space:nowrap;">
+    <label><input type="checkbox" name="agent" value="YI" checked onclick="handleAgentChange(event)">YI</label>
+    <label><input type="checkbox" name="agent" value="KZ" onclick="handleAgentChange(event)">KZ</label>
+    <label><input type="checkbox" name="agent" value="CC" onclick="handleAgentChange(event)">CC</label>
+  </div><br>
+
+  <label>Description:</label>
+  <div class="checkboxes">
+    <label><input type="checkbox" name="descPrefix" value="GR" onclick="updateTitle()">GR</label>
+    <label><input type="checkbox" name="descPrefix" value="Doitsu" onclick="updateTitle()">Doitsu</label>
+    <label><input type="checkbox" name="descPrefix" value="Tancho" onclick="updateTitle()">Tancho</label>
+    <label><input type="checkbox" name="descPrefix" value="Maruten" onclick="updateTitle()">Maruten</label>
+  </div>
+  <select id="descriptionSelect" onchange="handleDescriptionChange()">
+    <option value="">---neu---</option>
+    <option value="Kohaku">Kohaku</option><option value="Sanke">Sanke</option><option value="Showa">Showa</option><option value="Shiro Utsuri">Shiro Utsuri</option>
+    <option value="Bekko">Bekko</option><option value="Asagi">Asagi</option><option value="Shusui">Shusui</option><option value="Chagoi">Chagoi</option>
+    <option value="Soragoi">Soragoi</option><option value="Ochiba">Ochiba</option><option value="Doitsu">Doitsu</option><option value="Tancho">Tancho</option>
+    <option value="Goshiki">Goshiki</option><option value="Kujaku">Kujaku</option><option value="Yamabuki">Yamabuki</option><option value="Platinum">Platinum</option>
+    <option value="Gin Rin Kohaku">Gin Rin Kohaku</option><option value="Kin Showa">Kin Showa</option><option value="Beni Kikokuryu">Beni Kikokuryu</option><option value="Hi Utsuri">Hi Utsuri</option>
+  </select>
+  <input type="text" id="descriptionOther" style="display:none; margin-top: 5px; width: 220px;" maxlength="50" oninput="updateTitle()"><br>
+
+  <label>Qty:</label>
+  <input type="text" id="qty" value="1"><br>
+
+  <label>Oya:</label>
+  <input type="text" id="oya"><br>
+
+  <label>Age:</label>
+  <div class="checkboxes" id="age" style="display:inline-block;">
+    <input type="text" id="ageFrom" inputmode="numeric" pattern="[1-9]" maxlength="1" placeholder="von" value="2" oninput="updateTitle()" style="width:28px; text-align:center;">
+    -
+    <input type="text" id="ageTo" inputmode="numeric" pattern="[1-9]" maxlength="1" oninput="updateTitle()" style="width:28px; text-align:center;">
+  </div><br>
+
+  <label>Sex:</label>
+  <div class="checkboxes" id="sex" style="display:inline-block;">
+    <label><input type="checkbox" name="sex" value="m" onclick="handleSexChange(event)">m</label>
+    <label><input type="checkbox" name="sex" value="mw" onclick="handleSexChange(event)">mw</label>
+    <label><input type="checkbox" name="sex" value="w" checked onclick="handleSexChange(event)">w</label>
+  </div><br>
+
+  <label>Size/cm:</label>
+  <div class="checkboxes" id="size" style="display:inline-block; white-space:nowrap;">
+    <input type="text" id="sizeFrom" inputmode="numeric" pattern="\d{1,3}" maxlength="3" oninput="updateTitle()" style="width:44px; text-align:center;">
+    -
+    <input type="text" id="sizeTo" inputmode="numeric" pattern="\d{1,3}" maxlength="3" oninput="updateTitle()" style="width:44px; text-align:center;">
+  </div><br>
+
+  <label>B.Price:</label>
+  <input type="text" id="bprice" pattern="\d{1,7}" inputmode="numeric" maxlength="7">
+  <span class="price-checkbox">
+    <label><input type="checkbox" id="bpricePercent" onclick="updateTitle()"> +%X</label>
+  </span><br>
+
+  <label>K.Price:</label>
+  <input type="text" id="kprice" pattern="\d{1,7}" inputmode="numeric" maxlength="7"><br>
+
+  <label>Kunde:</label>
+  <div class="checkboxes">
+    <label><input type="radio" name="kunde" value="KZ" onclick="handleKundeChange()">KZ</label>
+    <label><input type="radio" name="kunde" value="CC" onclick="handleKundeChange()">CC</label>
+    <label><input type="radio" name="kunde" value="Andere" onclick="handleKundeChange()">Andere</label>
+  </div>
+  <input type="text" id="kundeOther" placeholder="Kunde eingeben" style="display:none; margin-top: 5px;" maxlength="50" oninput="updateTitle()">
+  <div class="checkboxes" style="margin-top: 5px;">
+    <label><input type="checkbox" id="kundeSub" onclick="handleSubChange()"> Sub:</label>
+  </div>
+  <div id="subContainer" style="display:none; margin-top: 5px;">
+    <select id="subSelect" onchange="handleSubSelectChange()" style="width: 220px;">
+      <option value="">---neu---</option>
+      <option value="Armbrust">Armbrust</option>
+      <option value="Essel">Essel</option>
+    </select>
+    <input type="text" id="subOther" placeholder="Name eingeben" style="display:none; margin-top: 5px; width: 220px;" maxlength="50" oninput="updateTitle()">
+  </div><br>
+
+  <label>Bemerkungen:</label>
+  <input list="remarks" id="bemerkungen" placeholder="" oninput="updateTitle()">
+  <datalist id="remarks">
+    <option>Azukari</option><option>komi</option><option>komic</option>
+  </datalist>
+  <div class="checkboxes" style="margin-top: 5px;">
+    <label><input type="checkbox" id="azukariCheck" onclick="handleAzukariChange()"> Azukari:</label>
+    <input type="text" id="azukariValue" placeholder="000000" pattern="\d{6}" inputmode="numeric" maxlength="6" style="display:none; width: 100px; margin-left: 5px;" oninput="updateTitle()">
+    <label style="margin-left: 15px;"><input type="checkbox" id="koishowCheck" onclick="handleKoiShowChange()"> Koi-Show</label>
+    <label style="margin-left: 15px;"><input type="checkbox" id="komiCheck" onclick="handleKomiChange()"> komi</label>
+    <label style="margin-left: 15px;"><input type="checkbox" id="komicCheck" onclick="handleKomicChange()"> komic</label>
+  </div><br>
+
+  <div id="output"></div>
+  <div class="success-msg" id="successMsg" role="status" aria-live="polite">✅ Text kopiert! Öffnen Sie jetzt Google Keep und fügen Sie den Text ein (lange auf das Textfeld drücken → Einfügen)</div>
+
+  <button type="button" onclick="sendToKeep()">📋 Text kopieren & Keep öffnen</button>
+  <button type="button" onclick="openKeepOnly()" class="btn-copy">📝 Nur Keep öffnen</button>
+  <button type="reset" class="btn-secondary" onclick="resetForm()">🧹 Zurücksetzen</button>
+
+</form>
+
+<div class="instructions">
+  <h3>📌 So verwenden Sie das Formular:</h3>
+  <ol>
+    <li>Füllen Sie alle gewünschten Felder aus</li>
+    <li>Klicken Sie auf "Text kopieren & Keep öffnen"</li>
+    <li>Google Keep wird automatisch geöffnet</li>
+    <li>In Keep: Neue Notiz erstellen</li>
+    <li>Lange auf das Textfeld drücken und "Einfügen" wählen</li>
+  </ol>
+  <p><strong>Preis-Codierung:</strong> Zahlen werden automatisch umgewandelt (z.B. 365000 → srgt)</p>
+</div>
+
+<script>
+const form = document.getElementById("koiForm");
+const output = document.getElementById("output");
+
+// Preis-Mapping
+const priceMap = {
+  '1': 'i', '2': 'f', '3': 's', '4': 'y', '5': 'g',
+  '6': 'r', '7': 'n', '8': 'h', '9': 'k',
+  '00': '2', '000': 't', '0000': 'z', '00000': '5', '000000': 'm'
+};
+
+// Initialisierung erst nach DOM-Load
+document.addEventListener('DOMContentLoaded', function() {
+  // Setze Input Date
+  const inputDateEl = document.getElementById("inputDate");
+  if (inputDateEl) {
+    inputDateEl.value = new Date().toISOString().slice(2,10).replace(/-/g,'');
+  }
+  
+  // Lade Defaults
+  loadDefaults();
+  // Stelle Description-Other entsprechend der aktuellen Auswahl dar
+  handleDescriptionChange();
+  
+  // Initiales Update
+  updateTitle();
+  
+  // Event Listener
+  const formEl = document.getElementById("koiForm");
+  if (formEl) {
+    formEl.addEventListener("input", updateTitle);
+  }
+});
+
+function formatFotoNumber() {
+  const input = document.getElementById('fotosNum');
+  if (!input) return;
+  
+  const value = input.value.replace(/\D/g, ''); // Nur Zahlen
+  if (value) {
+    input.value = value.padStart(3, '0'); // Mit Nullen auffüllen
+  }
+  updateTitle();
+}
+
+function handleHowToGetChange() {
+  const select = document.getElementById('howToGet');
+  const otherInput = document.getElementById('howToGetOther');
+  
+  if (!select || !otherInput) return;
+  
+  if (select.value === '') {
+    otherInput.style.display = 'block';
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+  updateTitle();
+}
+
+function handleBreederChange() {
+  const select = document.getElementById('breederSelect');
+  const otherInput = document.getElementById('breederOther');
+  
+  if (!select || !otherInput) return;
+  
+  if (select.value === '') {
+    otherInput.style.display = 'block';
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+  updateTitle();
+}
+
+function handleDescriptionChange() {
+  const select = document.getElementById('descriptionSelect');
+  const otherInput = document.getElementById('descriptionOther');
+  
+  if (!select || !otherInput) return;
+  
+  if (select.value === '') {
+    otherInput.style.display = 'block';
+    // Feld bei Umschalten auf ---neu--- leer anzeigen
+    otherInput.value = '';
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+  updateTitle();
+}
+
+function handleKomiChange() {
+  const komiCheck = document.getElementById('komiCheck');
+  const komicCheck = document.getElementById('komicCheck');
+  const azukariCheck = document.getElementById('azukariCheck');
+  if (komiCheck.checked) {
+    // mutual exclusion
+    if (komicCheck.checked) komicCheck.checked = false;
+    // ensure Azukari is selected
+    if (!azukariCheck.checked) {
+      azukariCheck.checked = true;
+      handleAzukariChange();
+    }
+  }
+  updateTitle();
+}
+
+function handleKomicChange() {
+  const komiCheck = document.getElementById('komiCheck');
+  const komicCheck = document.getElementById('komicCheck');
+  const azukariCheck = document.getElementById('azukariCheck');
+  if (komicCheck.checked) {
+    // mutual exclusion
+    if (komiCheck.checked) komiCheck.checked = false;
+    // ensure Azukari is selected
+    if (!azukariCheck.checked) {
+      azukariCheck.checked = true;
+      handleAzukariChange();
+    }
+  }
+  updateTitle();
+}
+
+function getHowToGetValue() {
+  const select = document.getElementById('howToGet');
+  const otherInput = document.getElementById('howToGetOther');
+  if (!select || !otherInput) return '';
+  
+  if (select.value === '') {
+    return otherInput.value;
+  }
+  return select.value;
+}
+
+function getBreederValue() {
+  const select = document.getElementById('breederSelect');
+  const otherInput = document.getElementById('breederOther');
+  if (!select || !otherInput) return '';
+  
+  if (select.value === '') {
+    return otherInput.value;
+  }
+  return select.value;
+}
+
+function getDescriptionValue() {
+  const select = document.getElementById('descriptionSelect');
+  const otherInput = document.getElementById('descriptionOther');
+  if (!select || !otherInput) return '';
+  
+  if (select.value === '') {
+    return otherInput.value;
+  }
+  return select.value;
+}
+
+function handleKundeChange() {
+  const andere = document.querySelector('input[name="kunde"][value="Andere"]');
+  const otherInput = document.getElementById('kundeOther');
+  
+  if (!andere || !otherInput) return;
+  
+  if (andere.checked) {
+    otherInput.style.display = 'block';
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+  updateTitle();
+}
+
+function handleSubChange() {
+  const subCheck = document.getElementById('kundeSub');
+  const subContainer = document.getElementById('subContainer');
+  
+  if (!subCheck || !subContainer) return;
+  
+  if (subCheck.checked) {
+    subContainer.style.display = 'block';
+  } else {
+    subContainer.style.display = 'none';
+    const subSelect = document.getElementById('subSelect');
+    const subOther = document.getElementById('subOther');
+    if (subSelect) subSelect.value = '';
+    if (subOther) {
+      subOther.style.display = 'none';
+      subOther.value = '';
+    }
+  }
+  updateTitle();
+}
+
+function handleSubSelectChange() {
+  const select = document.getElementById('subSelect');
+  const otherInput = document.getElementById('subOther');
+  
+  if (!select || !otherInput) return;
+  
+  if (select.value === '') {
+    otherInput.style.display = 'block';
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+  updateTitle();
+}
+
+function handleAzukariChange() {
+  const azukariCheck = document.getElementById('azukariCheck');
+  const azukariValue = document.getElementById('azukariValue');
+  
+  if (azukariCheck.checked) {
+    azukariValue.style.display = 'inline-block';
+  } else {
+    azukariValue.style.display = 'none';
+    azukariValue.value = '';
+  }
+  updateTitle();
+}
+
+function handleKoiShowChange() {
+  updateTitle();
+}
+
+function getKundeValue() {
+  const andere = document.querySelector('input[name="kunde"][value="Andere"]');
+  if (andere && andere.checked) {
+    return document.getElementById('kundeOther').value;
+  }
+  const selected = document.querySelector('input[name="kunde"]:checked');
+  return selected ? selected.value : '';
+}
+
+function getSubValue() {
+  const subCheck = document.getElementById('kundeSub');
+  if (!subCheck.checked) return '';
+  
+  const subSelect = document.getElementById('subSelect');
+  if (subSelect.value === '') {
+    const subOther = document.getElementById('subOther').value;
+    return subOther ? `Sub:${subOther}` : '';
+  }
+  return subSelect.value ? `Sub:${subSelect.value}` : '';
+}
+
+function getBemerkungenValue() {
+  // Bemerkungen-Freitext soll NICHT im Titel erscheinen
+  return '';
+}
+
+function getAzukariBodyLine() {
+  const azu = document.getElementById('azukariCheck');
+  if (!azu || !azu.checked) return '';
+  const now = new Date();
+  const yy = String((now.getFullYear() + 1) % 100).padStart(2, '0');
+  const amount = (document.getElementById('azukariValue')?.value || '').trim();
+  const amountEncoded = amount ? encodePrice(amount) : '';
+  const komi = document.getElementById('komiCheck')?.checked ? 'komi' : (document.getElementById('komicCheck')?.checked ? 'komic' : '');
+  const inner = [amountEncoded || null, komi || null].filter(Boolean).join(', ');
+  return inner ? `Azukari${yy} (${inner})` : `Azukari${yy}`;
+}
+
+function getBemerkungenBody() {
+  const sections = [];
+  const sub = getSubValue();
+  if (sub) sections.push(sub);
+  const azuLine = getAzukariBodyLine();
+  if (azuLine) sections.push(azuLine);
+  const koiShow = document.getElementById('koishowCheck');
+  if (koiShow && koiShow.checked) sections.push('Koi-Show');
+  // Freitext an letzter Stelle anfügen
+  const freeText = document.getElementById('bemerkungen').value;
+  if (freeText) sections.push(freeText);
+  return sections.join('\n');
+}
+
+function getDescriptionWithPrefix() {
+  const prefixes = [];
+  document.querySelectorAll('input[name="descPrefix"]:checked').forEach(cb => {
+    prefixes.push(cb.value);
+  });
+  const variety = getDescriptionValue();
+  if (prefixes.length > 0 && variety) {
+    return prefixes.join(' ') + ' ' + variety;
+  }
+  return variety;
+}
+
+function encodePrice(price) {
+  if (!price) return '';
+  
+  let encoded = '';
+  let remaining = price.toString();
+  
+  // Ersetze längste Nullenfolgen zuerst
+  const replacements = [
+    ['000000', 'm'],
+    ['00000', '5'],
+    ['0000', 'z'],
+    ['000', 't'],
+    ['00', '2']
+  ];
+  
+  for (const [pattern, code] of replacements) {
+    while (remaining.includes(pattern)) {
+      remaining = remaining.replace(pattern, code);
+    }
+  }
+  
+  // Ersetze einzelne Ziffern
+  for (let i = 0; i < remaining.length; i++) {
+    const char = remaining[i];
+    encoded += priceMap[char] || char;
+  }
+  
+  return encoded;
+}
+
+function handleAgentChange(e) {
+  const kz = document.querySelector('input[name="agent"][value="KZ"]');
+  const cc = document.querySelector('input[name="agent"][value="CC"]');
+  const yi = document.querySelector('input[name="agent"][value="YI"]');
+  const target = e && e.target ? e.target : null;
+
+  // Verhindere KZ und CC gleichzeitig
+  if (kz.checked && cc.checked) {
+    if (target && target.value === 'KZ') {
+      cc.checked = false;
+    } else if (target && target.value === 'CC') {
+      kz.checked = false;
+    } else {
+      cc.checked = false;
+    }
+  }
+
+  // Wenn KZ oder CC gewählt ist, stelle sicher, dass YI gewählt ist
+  if ((kz.checked || cc.checked) && !yi.checked) {
+    yi.checked = true;
+  }
+
+  // Verhindere, dass YI abgewählt wird, solange KZ oder CC gewählt ist
+  if (target && target.value === 'YI' && !target.checked && (kz.checked || cc.checked)) {
+    target.checked = true;
+  }
+
+  updateTitle();
+}
+
+function getAgentValue() {
+  const kz = document.querySelector('input[name="agent"][value="KZ"]');
+  const cc = document.querySelector('input[name="agent"][value="CC"]');
+  const yi = document.querySelector('input[name="agent"][value="YI"]');
+
+  if (yi.checked && kz.checked && !cc.checked) return 'KZ-YI';
+  if (yi.checked && cc.checked && !kz.checked) return 'CC-YI';
+  if (yi.checked && !kz.checked && !cc.checked) return 'YI';
+  return '';
+}
+
+function getCheckboxValues(name) {
+  if (name === 'agent') {
+    return getAgentValue();
+  }
+  const checked = document.querySelectorAll(`input[name="${name}"]:checked`);
+  return Array.from(checked).map(el => el.value).join(',');
+}
+
+function getRadioValue(name) {
+  const selected = document.querySelector(`input[name="${name}"]:checked`);
+  return selected ? selected.value : "";
+}
+
+function handleSexChange(e) {
+  const target = e && e.target ? e.target : null;
+  if (!target) return;
+  const boxes = document.querySelectorAll('input[name="sex"]');
+  // If user checked one, uncheck the others
+  if (target.checked) {
+    boxes.forEach(cb => { if (cb !== target) cb.checked = false; });
+  } else {
+    // Prevent having none selected: keep the last toggled on
+    target.checked = true;
+  }
+  updateTitle();
+}
+
+function getAgeRangeValue() {
+  const fromEl = document.getElementById('ageFrom');
+  const toEl = document.getElementById('ageTo');
+  const from = fromEl ? fromEl.value.trim() : '';
+  const to = toEl ? toEl.value.trim() : '';
+  if (from && to) return `${from}-${to}`;
+  if (from && !to) return from;
+  if (!from && to) return to;
+  return '';
+}
+
+function getSizeRangeValue() {
+  const fromEl = document.getElementById('sizeFrom');
+  const toEl = document.getElementById('sizeTo');
+  const from = fromEl ? fromEl.value.trim() : '';
+  const to = toEl ? toEl.value.trim() : '';
+  if (from && to) return `${from}-${to}`;
+  if (from && !to) return from;
+  if (!from && to) return to;
+  return '';
+}
+
+function updateTitle() {
+  const fotosNum = document.getElementById('fotosNum');
+  const inputDate = document.getElementById('inputDate');
+  const bprice = document.getElementById('bprice');
+  const kprice = document.getElementById('kprice');
+  const bpricePercent = document.getElementById('bpricePercent');
+  const qty = document.getElementById('qty');
+  const oya = document.getElementById('oya');
+  
+  
+  // Prüfe ob alle Elemente existieren
+  if (!fotosNum || !inputDate || !bprice || !kprice || !bpricePercent || !qty || !oya) {
+    return;
+  }
+  
+  const fotosComplete = '26-' + fotosNum.value;
+  let bpriceEncoded = encodePrice(bprice.value);
+  const kpriceEncoded = encodePrice(kprice.value);
+  
+  // Füge +%X hinzu wenn Checkbox aktiviert
+  if (bpricePercent.checked) {
+    bpriceEncoded += '+%X';
+  }
+  
+  const parts = [
+    fotosComplete,
+    inputDate.value,
+    getHowToGetValue(),
+    getBreederValue(),
+    getAgentValue(),
+    getDescriptionWithPrefix(),
+    qty.value,
+    oya.value || '', // Leerer String statt überspringen
+    getAgeRangeValue(),
+    getRadioValue('sex'),
+    getSizeRangeValue(),
+    bpriceEncoded,
+    kpriceEncoded,
+    getKundeValue(),
+    getBemerkungenValue()
+  ];
+  
+  // Komma-separated, aber leere Strings behalten (kein Filter)
+  const outputEl = document.getElementById('output');
+  if (outputEl) {
+    outputEl.textContent = parts.join(', ');
+  }
+}
+
+function saveDefaults() {
+  try {
+    const howToGet = getHowToGetValue();
+    const breeder = getBreederValue();
+    const description = getDescriptionValue();
+    const agent = getAgentValue();
+    
+    const qtyEl = document.getElementById('qty');
+    const oyaEl = document.getElementById('oya');
+    
+    const defaults = {
+      howToGet: howToGet || '',
+      breeder: breeder || '',
+      agent: agent || '',
+      descriptionPrefixes: Array.from(document.querySelectorAll('input[name="descPrefix"]:checked')).map(cb => cb.value),
+      description: description || '',
+      qty: qtyEl ? qtyEl.value : '1',
+      oya: oyaEl ? oyaEl.value : '',
+      ageFrom: (document.getElementById('ageFrom')?.value || ''),
+      ageTo: (document.getElementById('ageTo')?.value || ''),
+      sex: getRadioValue('sex') || 'w',
+      kunde: getRadioValue('kunde') || '',
+      kundeOther: document.getElementById('kundeOther') ? document.getElementById('kundeOther').value : ''
+    };
+    
+    const formData = {
+      defaults: defaults,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('koiDefaults', JSON.stringify(formData));
+  } catch (e) {
+    console.error('Fehler beim Speichern der Defaults:', e);
+  }
+}
+
+function loadDefaults() {
+  const saved = localStorage.getItem('koiDefaults');
+  if (!saved) return;
+  
+  try {
+    const data = JSON.parse(saved);
+    const defaults = data.defaults;
+    
+    // How to Get
+    const howToGetSelect = document.getElementById('howToGet');
+    const howToGetOther = document.getElementById('howToGetOther');
+    if (defaults.howToGet && howToGetSelect && howToGetOther) {
+      const option = Array.from(howToGetSelect.options).find(opt => opt.value === defaults.howToGet);
+      if (option) {
+        howToGetSelect.value = defaults.howToGet;
+      } else {
+        howToGetSelect.value = '';
+        howToGetOther.value = defaults.howToGet;
+        howToGetOther.style.display = 'block';
+      }
+    }
+    
+    // Breeder
+    const breederSelect = document.getElementById('breederSelect');
+    const breederOther = document.getElementById('breederOther');
+    if (defaults.breeder && breederSelect && breederOther) {
+      const option = Array.from(breederSelect.options).find(opt => opt.value === defaults.breeder);
+      if (option) {
+        breederSelect.value = defaults.breeder;
+      } else {
+        breederSelect.value = '';
+        breederOther.value = defaults.breeder;
+        breederOther.style.display = 'block';
+      }
+    }
+    
+    // Description
+    const descSelect = document.getElementById('descriptionSelect');
+    const descOther = document.getElementById('descriptionOther');
+    if (defaults.description && descSelect && descOther) {
+      const option = Array.from(descSelect.options).find(opt => opt.value === defaults.description);
+      if (option) {
+        descSelect.value = defaults.description;
+      } else {
+        descSelect.value = '';
+        descOther.value = defaults.description;
+        descOther.style.display = 'block';
+      }
+    }
+    
+    const qtyEl = document.getElementById('qty');
+    const oyaEl = document.getElementById('oya');
+    if (defaults.qty && qtyEl) qtyEl.value = defaults.qty;
+    if (defaults.oya && oyaEl) oyaEl.value = defaults.oya;
+    
+    // Description Prefixes
+    if (defaults.descriptionPrefixes && Array.isArray(defaults.descriptionPrefixes)) {
+      defaults.descriptionPrefixes.forEach(val => {
+        const checkbox = document.querySelector(`input[name="descPrefix"][value="${val}"]`);
+        if (checkbox) checkbox.checked = true;
+      });
+    }
+    
+    // Agent Checkboxen - alle zuerst deaktivieren
+    document.querySelectorAll('input[name="agent"]').forEach(cb => cb.checked = false);
+    if (defaults.agent) {
+      // Parse X-YI Format
+      if (defaults.agent.includes('-')) {
+        const parts = defaults.agent.split('-');
+        parts.forEach(val => {
+          const checkbox = document.querySelector(`input[name="agent"][value="${val}"]`);
+          if (checkbox) checkbox.checked = true;
+        });
+      } else {
+        // Einzelner Wert
+        const checkbox = document.querySelector(`input[name="agent"][value="${defaults.agent}"]`);
+        if (checkbox) checkbox.checked = true;
+      }
+    }
+    
+    // Kunde Radio
+    if (defaults.kunde) {
+      const kundeRadio = document.querySelector(`input[name="kunde"][value="${defaults.kunde}"]`);
+      const kundeOther = document.getElementById('kundeOther');
+      if (kundeRadio) {
+        kundeRadio.checked = true;
+        if (kundeOther) handleKundeChange();
+      }
+      if (defaults.kunde === 'Andere' && defaults.kundeOther && kundeOther) {
+        kundeOther.value = defaults.kundeOther;
+      }
+    }
+    
+    // Age Range
+    const ageFromEl = document.getElementById('ageFrom');
+    const ageToEl = document.getElementById('ageTo');
+    if (ageFromEl && defaults.ageFrom !== undefined) ageFromEl.value = defaults.ageFrom;
+    if (ageToEl && defaults.ageTo !== undefined) ageToEl.value = defaults.ageTo;
+    
+    // Sex Radio
+    if (defaults.sex) {
+      const sexRadio = document.querySelector(`input[name="sex"][value="${defaults.sex}"]`);
+      if (sexRadio) sexRadio.checked = true;
+    }
+    
+    updateTitle();
+  } catch (e) {
+    console.error('Fehler beim Laden der Defaults:', e);
+    // Fehler nicht weiter werfen, damit die Seite trotzdem funktioniert
+  }
+}
+
+function getNoteContent() {
+  const title = output.textContent || "Koi Datenblatt";
+  
+  // Body enthält Sub und Azukari-Infos
+  const body = getBemerkungenBody();
+
+  return { title, body };
+}
+
+function copyToClipboard() {
+  const { title, body } = getNoteContent();
+  const fullText = `${title}\n\n${body}`;
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(fullText).then(() => {
+      showSuccess();
+    }).catch(() => {
+      fallbackCopy(fullText);
+    });
+  } else {
+    fallbackCopy(fullText);
+  }
+}
+
+function fallbackCopy(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, 99999);
+  
+  try {
+    document.execCommand('copy');
+    showSuccess();
+  } catch (err) {
+    alert('Kopieren fehlgeschlagen. Bitte kopieren Sie den Text manuell.');
+  }
+  
+  document.body.removeChild(textarea);
+}
+
+function showSuccess() {
+  const msg = document.getElementById('successMsg');
+  msg.style.display = 'block';
+  setTimeout(() => { msg.style.display = 'none'; }, 5000);
+}
+
+function sendToKeep() {
+  saveDefaults();
+  copyToClipboard();
+  setTimeout(() => {
+    openKeepOnly();
+  }, 500);
+}
+
+function openKeepOnly() {
+  window.open('https://keep.google.com', '_blank', 'noopener');
+}
+
+function resetForm() {
+  const formEl = document.getElementById("koiForm");
+  if (formEl) formEl.reset();
+  
+  const inputDateEl = document.getElementById("inputDate");
+  if (inputDateEl) {
+    inputDateEl.value = new Date().toISOString().slice(2,10).replace(/-/g,'');
+  }
+  
+  const agentYI = document.querySelector('input[name="agent"][value="YI"]');
+  const agentKZ = document.querySelector('input[name="agent"][value="KZ"]');
+  const agentCC = document.querySelector('input[name="agent"][value="CC"]');
+  if (agentYI) agentYI.checked = true;
+  if (agentKZ) agentKZ.checked = false;
+  if (agentCC) agentCC.checked = false;
+  
+  const ageFromEl = document.getElementById('ageFrom');
+  const ageToEl = document.getElementById('ageTo');
+  if (ageFromEl) ageFromEl.value = '2';
+  if (ageToEl) ageToEl.value = '';
+  const sizeFromEl = document.getElementById('sizeFrom');
+  const sizeToEl = document.getElementById('sizeTo');
+  if (sizeFromEl) sizeFromEl.value = '';
+  if (sizeToEl) sizeToEl.value = '';
+  
+  const howToGet = document.getElementById('howToGet');
+  if (howToGet) howToGet.selectedIndex = 1; // Tour KZ
+  
+  const bprice = document.getElementById('bprice');
+  if (bprice) bprice.value = '';
+  
+  const kprice = document.getElementById('kprice');
+  if (kprice) kprice.value = '';
+  const koiShow = document.getElementById('koishowCheck');
+  if (koiShow) koiShow.checked = false;
+  
+  // Verstecke alle zusätzlichen Eingabefelder
+  const hideElements = [
+    'kundeOther', 'subContainer', 'subOther', 'azukariValue',
+    'howToGetOther', 'breederOther', 'descriptionOther'
+  ];
+  
+  hideElements.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  
+  const outputEl = document.getElementById('output');
+  if (outputEl) outputEl.textContent = "";
+  
+  const successMsg = document.getElementById('successMsg');
+  if (successMsg) successMsg.style.display = 'none';
+  
+  updateTitle();
+}
+
+updateTitle();
+</script>
+
+</body>
+</html>
